@@ -1732,9 +1732,9 @@
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email, password }),
             })
-            .then(res => res.json())
-            .then(json => {
-                console.log('[Frontend] POST /api/login response', { status: res.status, success: json.success });
+            .then(res => res.json().then(json => ({ status: res.status, json })))
+            .then(({ status, json }) => {
+                console.log('[Frontend] POST /api/login response', { status, success: json.success });
                 if (json.success && json.data?.authenticated) {
                     authState = { loggedIn: true, name: email.split('@')[0], email };
                     localStorage.setItem('urja-auth', JSON.stringify(authState));
