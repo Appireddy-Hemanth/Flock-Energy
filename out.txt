@@ -1,0 +1,51 @@
+{
+  "meterId": "J100008",
+  "detail": {
+    "data": [
+      {
+        "parameterName": "Meter ID",
+        "parameterValue": "J100008"
+      },
+      {
+        "parameterName": "Serial No",
+        "parameterValue": "SE63900"
+      },
+      {
+        "parameterName": "Make",
+        "parameterValue": "Genus"
+      },
+      {
+        "parameterName": "Phase Type",
+        "parameterValue": "single"
+      },
+      {
+        "parameterName": "Installation Status",
+        "parameterValue": "Installed"
+      },
+      {
+        "parameterName": "Installation Type",
+        "parameterValue": "Whole Current"
+      }
+    ]
+  },
+  "hierarchy": {
+    "Meter ID": "J100008",
+    "Installation Status": "Installed",
+    "Installation Type": "Whole Current",
+    "Zone": "Jaipur Zone 3 (Z-03)",
+    "Circle": "Circle 3 (C-03)",
+    "Division": "Division 9 (D-09)",
+    "Subdivision": "Subdivision 9 (SD-09)",
+    "Sub Station": "Substation 9 (SS-09)",
+    "Feeder": "Feeder 9 (F-009)",
+    "DT": "Sikar Road DT 9 (DT-009)"
+  }
+}
+{
+  'Meter ID': 'J100008',
+  'Serial No': 'SE63900',
+  Make: 'Genus',
+  'Phase Type': 'single',
+  'Installation Status': 'Installed',
+  'Installation Type': 'Whole Current'
+}

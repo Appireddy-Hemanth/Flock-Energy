@@ -1,0 +1,32 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment variables
+.env
+
+# Logs
+*.log
+
+# Diagnostic / scratch files (not part of submission)
+probe.js
+probe.log
+capture.js
+test_api.js
+test_parser.js
+httpclient.js
+cyberoamAjax.js
+sophos.html
+portal.html
+traffic.json
+api_responses.log
+test_failure.log
+test_output.log
+unit_test_output.log
+server.log
+
+# OS files
+.DS_Store
+Thumbs.db

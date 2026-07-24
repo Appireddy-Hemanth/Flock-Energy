@@ -1,0 +1,1558 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Urja Meter Ops — Dashboard</title>
+    <meta name="description" content="Modern dashboard for Urja Meter Ops distribution metering operations portal" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg-primary: #0a0e1a;
+            --bg-secondary: #111827;
+            --bg-card: rgba(17, 24, 39, 0.7);
+            --bg-glass: rgba(255, 255, 255, 0.03);
+            --border-glass: rgba(255, 255, 255, 0.08);
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --accent: #6366f1;
+            --accent-light: #818cf8;
+            --accent-glow: rgba(99, 102, 241, 0.15);
+            --success: #22c55e;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --radius: 16px;
+            --radius-sm: 10px;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+        }
+
+        body[data-theme='light'] {
+            --bg-primary: #f4f7fb;
+            --bg-secondary: #ffffff;
+            --bg-card: rgba(255, 255, 255, 0.9);
+            --bg-glass: rgba(15, 23, 42, 0.04);
+            --border-glass: rgba(15, 23, 42, 0.1);
+            --text-primary: #0f172a;
+            --text-secondary: #334155;
+            --text-muted: #64748b;
+            --accent: #4f46e5;
+            --accent-light: #6366f1;
+            --accent-glow: rgba(79, 70, 229, 0.12);
+            --shadow: 0 8px 30px rgba(15, 23, 42, 0.08);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(99, 102, 241, 0.06) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.04) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgShift 20s ease-in-out infinite alternate;
+        }
+
+        @keyframes bgShift {
+            0% {
+                transform: translate(0, 0);
+            }
+
+            100% {
+                transform: translate(-5%, -5%);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(24px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 1.5s infinite;
+        }
+
+        .fade-in {
+            animation: fadeInUp 0.5s ease-out both;
+        }
+
+        .fade-in-1 {
+            animation-delay: 0.1s;
+        }
+
+        .fade-in-2 {
+            animation-delay: 0.2s;
+        }
+
+        .fade-in-3 {
+            animation-delay: 0.3s;
+        }
+
+        .fade-in-4 {
+            animation-delay: 0.4s;
+        }
+
+        /* Header */
+        header {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border-glass);
+            padding: 0 32px;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, var(--accent), #a855f7);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            font-weight: 800;
+            color: white;
+        }
+
+        .logo-text {
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-text span {
+            color: var(--accent-light);
+        }
+
+        .header-nav {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 13px;
+            font-weight: 500;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .nav-btn:hover {
+            background: var(--bg-glass);
+            color: var(--text-primary);
+        }
+
+        .nav-btn.active {
+            background: var(--accent-glow);
+            color: var(--accent-light);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .icon-btn,
+        .auth-chip {
+            border: 1px solid var(--border-glass);
+            background: var(--bg-glass);
+            color: var(--text-secondary);
+            border-radius: 999px;
+            padding: 8px 12px;
+            font: inherit;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .icon-btn:hover,
+        .auth-chip:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .auth-chip.connected {
+            background: var(--accent-glow);
+            color: var(--accent-light);
+        }
+
+        .header-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+        }
+
+        /* Main Layout */
+        main {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 24px 32px 60px;
+        }
+
+        /* Sections */
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+        }
+
+        /* Stats Row */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 20px 24px;
+            transition: all 0.3s;
+        }
+
+        .stat-card:hover {
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        .stat-sub {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-top: 4px;
+        }
+
+        /* Search Bar */
+        .search-container {
+            position: relative;
+            margin-bottom: 24px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 14px 20px 14px 48px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        .search-input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 16px;
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead th {
+            padding: 14px 20px;
+            text-align: left;
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border-glass);
+            background: rgba(0, 0, 0, 0.2);
+        }
+
+        tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        tbody tr:hover {
+            background: var(--accent-glow);
+        }
+
+        tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        td {
+            padding: 14px 20px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        td:first-child {
+            color: var(--text-primary);
+            font-weight: 600;
+            font-family: 'SF Mono', 'Consolas', monospace;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .badge-purple {
+            background: rgba(139, 92, 246, 0.15);
+            color: #a78bfa;
+        }
+
+        .badge-blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+        }
+
+        .badge-green {
+            background: rgba(34, 197, 94, 0.15);
+            color: #4ade80;
+        }
+
+        .badge-amber {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+        }
+
+        .pagination {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 16px;
+            border-top: 1px solid var(--border-glass);
+        }
+
+        .page-btn {
+            padding: 8px 14px;
+            border: 1px solid var(--border-glass);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+
+        .page-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .page-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .page-info {
+            font-size: 13px;
+            color: var(--text-muted);
+            padding: 0 12px;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: 200;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            width: 90%;
+            max-width: 720px;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow);
+            animation: fadeInUp 0.3s ease-out;
+        }
+
+        .modal-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border-glass);
+        }
+
+        .modal-header h2 {
+            font-size: 18px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border-glass);
+            background: transparent;
+            color: var(--text-secondary);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .modal-close:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .detail-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .detail-item {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            padding: 14px 16px;
+        }
+
+        .detail-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 4px;
+        }
+
+        .detail-value {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .chart-container {
+            background: var(--bg-glass);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius-sm);
+            padding: 20px;
+            height: 280px;
+        }
+
+        .chart-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        /* Network Tree */
+        .tree-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 16px;
+        }
+
+        .tree-node {
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .tree-node:hover {
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .tree-header {
+            padding: 16px 20px;
+            background: rgba(99, 102, 241, 0.06);
+            border-bottom: 1px solid var(--border-glass);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+        }
+
+        .tree-header h3 {
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tree-count {
+            font-size: 11px;
+            background: var(--accent-glow);
+            color: var(--accent-light);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+        }
+
+        .tree-children {
+            display: block;
+            padding: 8px 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            min-height: 100px;
+        }
+
+        .tree-children.collapsed {
+            display: none;
+        }
+
+        .tree-child {
+            padding: 8px 12px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            border-radius: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tree-child:hover {
+            background: var(--accent-glow);
+            color: var(--text-primary);
+        }
+
+        .tree-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            flex-shrink: 0;
+        }
+
+        /* Loading */
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            color: var(--text-muted);
+            gap: 12px;
+        }
+
+        .spinner {
+            width: 32px;
+            height: 32px;
+            border: 3px solid var(--border-glass);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px;
+            color: var(--text-muted);
+        }
+
+        .empty-state h3 {
+            font-size: 16px;
+            margin-bottom: 8px;
+            color: var(--text-secondary);
+        }
+
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 16px;
+            align-items: center;
+        }
+
+        .toolbar select,
+        .toolbar button {
+            padding: 10px 12px;
+            border-radius: 10px;
+            border: 1px solid var(--border-glass);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 13px;
+        }
+
+        .toolbar button {
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .toolbar button:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .pagination-btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: 1px solid var(--border-glass);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin: 0 8px;
+        }
+
+        .pagination-btn:hover:not(:disabled) {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .auth-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.66);
+            backdrop-filter: blur(4px);
+            z-index: 270;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+
+        .auth-modal-overlay.active {
+            display: flex;
+        }
+
+        .auth-gate-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            z-index: 260;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+            color: var(--text-primary);
+            text-align: center;
+        }
+
+        .auth-gate-overlay.active {
+            display: flex;
+        }
+
+        .auth-gate-card {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 28px;
+            box-shadow: var(--shadow);
+            max-width: 440px;
+            width: 100%;
+        }
+
+        .auth-gate-card h3 {
+            margin: 0 0 12px;
+            font-size: 1.25rem;
+        }
+
+        .auth-gate-card p {
+            margin: 0 0 20px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        .auth-gate-card button {
+            padding: 12px 18px;
+            border: none;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            cursor: pointer;
+            font-size: 0.95rem;
+        }
+
+        .auth-modal {
+            width: min(100%, 420px);
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-glass);
+            border-radius: var(--radius);
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .auth-modal h3 {
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .auth-modal p {
+            color: var(--text-muted);
+            margin-bottom: 16px;
+            font-size: 13px;
+        }
+
+        .auth-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .auth-field label {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .auth-field input {
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 10px 12px;
+            background: var(--bg-card);
+            color: var(--text-primary);
+            font: inherit;
+        }
+
+        .auth-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 16px;
+        }
+
+        .auth-actions button {
+            border: 1px solid var(--border-glass);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font: inherit;
+            cursor: pointer;
+            background: var(--bg-card);
+            color: var(--text-primary);
+        }
+
+        .auth-actions button.primary {
+            background: var(--accent);
+            color: white;
+            border-color: transparent;
+        }
+
+        .helper-text {
+            margin-top: 12px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border-glass);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .stats-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tree-container {
+                grid-template-columns: 1fr;
+            }
+
+            main {
+                padding: 16px;
+            }
+
+            header {
+                padding: 0 16px;
+            }
+
+            .header-status {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="logo">
+            <div class="logo-icon">⚡</div>
+            <div class="logo-text">Urja <span>Meter Ops</span></div>
+        </div>
+        <div class="header-nav">
+            <button class="nav-btn active" data-section="meters" onclick="showSection('meters', event)">Meters</button>
+            <button class="nav-btn" data-section="network" onclick="showSection('network', event)">Network</button>
+            <button class="nav-btn" onclick="window.open('/docs','_blank')">API Docs</button>
+        </div>
+        <div class="header-actions">
+            <button class="icon-btn" id="theme-toggle" onclick="toggleTheme()" title="Switch theme">☀️</button>
+            <button class="auth-chip" id="auth-chip" onclick="handleAuthAction()">Login</button>
+            <div class="header-status">
+                <div class="status-dot"></div>
+                Connected
+            </div>
+        </div>
+    </header>
+
+    <div class="auth-gate-overlay" id="auth-gate-overlay">
+        <div class="auth-gate-card">
+            <h3>Login required</h3>
+            <p>Please sign in to access the Urja Meter Ops dashboard and start viewing meters.</p>
+            <button type="button" onclick="openAuthModal()">Open login</button>
+        </div>
+    </div>
+
+    <main>
+        <!-- Meters Section -->
+        <section id="section-meters" class="section active">
+            <div class="stats-row fade-in fade-in-1" id="stats-row">
+                <div class="stat-card">
+                    <div class="stat-label">Total Meters</div>
+                    <div class="stat-value" id="stat-total">—</div>
+                    <div class="stat-sub">across all DTs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Transformers</div>
+                    <div class="stat-value" id="stat-dts">—</div>
+                    <div class="stat-sub">distribution nodes</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Page Size</div>
+                    <div class="stat-value" id="stat-pagesize">20</div>
+                    <div class="stat-sub">meters per page</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">API Status</div>
+                    <div class="stat-value" style="color: var(--success);" id="stat-status">●</div>
+                    <div class="stat-sub" id="stat-status-text">checking…</div>
+                </div>
+            </div>
+
+            <div class="search-container fade-in fade-in-2">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" id="search-input"
+                    placeholder="Search meters by ID, serial number, make…"
+                    oninput="debouncedSearch()" />
+            </div>
+
+            <div class="toolbar fade-in fade-in-2">
+                <select id="filter-make">
+                    <option value="">All makes</option>
+                </select>
+                <select id="filter-status">
+                    <option value="">All statuses</option>
+                    <option value="installed">Installed</option>
+                    <option value="active">Active</option>
+                </select>
+                <select id="filter-dt">
+                    <option value="">All DTs</option>
+                </select>
+                <select id="filter-phase">
+                    <option value="">All phases</option>
+                    <option value="single">Single</option>
+                    <option value="three">Three</option>
+                </select>
+                <select id="sort-by">
+                    <option value="">Sort by</option>
+                    <option value="meterId">Meter ID</option>
+                    <option value="serialNo">Serial No</option>
+                    <option value="make">Make</option>
+                    <option value="installStatus">Status</option>
+                    <option value="dtCode">DT Code</option>
+                </select>
+                <select id="sort-order">
+                    <option value="">Order</option>
+                    <option value="asc">Ascending</option>
+                    <option value="desc">Descending</option>
+                </select>
+                <button onclick="applyFilters()">Apply Filters</button>
+                <button onclick="resetFilters()">Reset</button>
+                <button onclick="exportMeters('json')">Export JSON</button>
+                <button onclick="exportMeters('csv')">Export CSV</button>
+            </div>
+
+            <div class="table-container fade-in fade-in-3">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Meter ID</th>
+                            <th>Serial Number</th>
+                            <th>Make</th>
+                            <th>Install Type</th>
+                            <th>DT Code</th>
+                        </tr>
+                    </thead>
+                    <tbody id="meter-tbody">
+                        <tr>
+                            <td colspan="5" class="loading">
+                                <div class="spinner"></div>Loading meters…
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </section>
+
+        <!-- Network Section -->
+        <section id="section-network" class="section">
+            <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 20px; letter-spacing: -0.5px;" class="fade-in">
+                Distribution Network Hierarchy
+            </h2>
+            <div class="tree-container" id="network-tree">
+                <div class="loading">
+                    <div class="spinner"></div>Loading network…
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Meter Detail Modal -->
+    <div class="modal-overlay" id="modal-overlay" onclick="if(event.target===this) closeModal()">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 id="modal-title">Meter Details</h2>
+                <button class="modal-close" onclick="closeModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modal-body">
+                <div class="loading">
+                    <div class="spinner"></div>Loading…
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-modal-overlay" id="auth-modal-overlay" onclick="if(event.target===this) closeAuthModal()">
+        <div class="auth-modal">
+            <h3>Welcome back</h3>
+            <p>Sign in to keep your dashboard session handy.</p>
+            <div class="auth-field">
+                <label for="auth-email">Email</label>
+                <input id="auth-email" type="email" placeholder="ops@flockenergy.tech" />
+            </div>
+            <div class="auth-field">
+                <label for="auth-password">Password</label>
+                <input id="auth-password" type="password" placeholder="Enter any password" />
+            </div>
+            <div class="auth-actions">
+                <button type="button" onclick="closeAuthModal()">Cancel</button>
+                <button type="button" class="primary" onclick="submitAuthForm()">Login</button>
+            </div>
+            <div class="helper-text">This is a lightweight local session for the dashboard experience.</div>
+        </div>
+    </div>
+
+    <script>
+        const API = '/api';
+        let currentPage = 1;
+        let currentQuery = '';
+        let searchTimer = null;
+        let allMeters = [];
+        let activeChart = null;
+        let authState = { loggedIn: false, name: 'Guest', email: '' };
+
+        function applyTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            const toggle = document.getElementById('theme-toggle');
+            if (toggle) {
+                toggle.textContent = theme === 'light' ? '🌙' : '☀️';
+                toggle.title = theme === 'light' ? 'Switch to dark mode' : 'Switch to light mode';
+            }
+            localStorage.setItem('urja-theme', theme);
+        }
+
+        function loadTheme() {
+            const saved = localStorage.getItem('urja-theme');
+            const preferred = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+            applyTheme(saved || preferred);
+        }
+
+        function updateAuthUI() {
+            const chip = document.getElementById('auth-chip');
+            if (!chip) return;
+            chip.textContent = authState.loggedIn ? `Logout · ${authState.name || authState.email || 'User'}` : 'Login';
+            chip.classList.toggle('connected', authState.loggedIn);
+            updateAuthGate();
+        }
+
+        function updateAuthGate() {
+            const gate = document.getElementById('auth-gate-overlay');
+            if (!gate) return;
+            gate.classList.toggle('active', !authState.loggedIn);
+        }
+
+        function requireAuth() {
+            if (!authState.loggedIn) {
+                openAuthModal();
+                updateAuthGate();
+                return false;
+            }
+            return true;
+        }
+
+        function hydrateAuthState() {
+            try {
+                const stored = JSON.parse(localStorage.getItem('urja-auth') || 'null');
+                if (stored?.loggedIn) {
+                    authState = { loggedIn: true, name: stored.name || 'User', email: stored.email || '' };
+                }
+            } catch (err) {
+                console.warn('[Frontend] Unable to read auth state', err);
+            }
+            updateAuthUI();
+        }
+
+        function handleAuthAction() {
+            if (authState.loggedIn) {
+                authState = { loggedIn: false, name: 'Guest', email: '' };
+                localStorage.removeItem('urja-auth');
+                updateAuthUI();
+                return;
+            }
+            openAuthModal();
+        }
+
+        function openAuthModal() {
+            document.getElementById('auth-modal-overlay').classList.add('active');
+            const email = document.getElementById('auth-email');
+            if (email) email.focus();
+        }
+
+        function closeAuthModal() {
+            document.getElementById('auth-modal-overlay').classList.remove('active');
+        }
+
+        function submitAuthForm() {
+            const email = document.getElementById('auth-email').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+            if (!email || !password) {
+                alert('Please enter both email and password.');
+                return;
+            }
+            authState = { loggedIn: true, name: email.split('@')[0], email };
+            localStorage.setItem('urja-auth', JSON.stringify(authState));
+            updateAuthUI();
+            closeAuthModal();
+            refreshTransformerStat();
+            loadMeters(1);
+        }
+
+        function toggleTheme() {
+            const next = document.body.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+            applyTheme(next);
+        }
+
+        // --- Navigation ---
+        function showSection(name, event) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            const targetSection = document.getElementById('section-' + name);
+            if (targetSection) targetSection.classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            const button = event?.currentTarget || document.querySelector(`.nav-btn[data-section="${name}"]`);
+            if (button) button.classList.add('active');
+            if (name === 'network' && requireAuth()) loadNetwork();
+        }
+
+        // --- Meters ---
+        function debouncedSearch() {
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => searchMeters(), 250);
+        }
+
+        function getActiveFilters() {
+            return {
+                make: document.getElementById('filter-make').value,
+                status: document.getElementById('filter-status').value,
+                dtCode: document.getElementById('filter-dt').value,
+                phaseType: document.getElementById('filter-phase').value,
+                sortBy: document.getElementById('sort-by').value,
+                sortOrder: document.getElementById('sort-order').value,
+            };
+        }
+
+        function buildQueryParams(filters) {
+            const params = new URLSearchParams();
+            if (currentQuery) params.set('q', currentQuery);
+            Object.entries(filters).forEach(([key, value]) => {
+                if (value) params.set(key, value);
+            });
+            return params;
+        }
+
+        async function loadMeters(page = 1, query = '') {
+            if (!requireAuth()) return;
+            currentPage = page;
+            currentQuery = query;
+            const tbody = document.getElementById('meter-tbody');
+            tbody.innerHTML = '<tr><td colspan="5" class="loading"><div class="spinner"></div>Loading…</td></tr>';
+            console.log('[Frontend] GET /api/meters', { page, query });
+
+            try {
+                const filters = getActiveFilters();
+                const params = buildQueryParams(filters);
+                params.set('page', String(page));
+                const endpoint = query || Object.values(filters).some(Boolean)
+                    ? `${API}/search?${params.toString()}`
+                    : `${API}/meters?${params.toString()}`;
+                const res = await fetch(endpoint);
+                const json = await res.json();
+                console.log('[Frontend] Response /api/meters-or-search', { endpoint, status: res.status, count: (json.data || []).length });
+
+                const meters = json.data || [];
+                const meta = json.meta || {};
+                allMeters = meters;
+                if (meters.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><h3>No meters found</h3>Try a different search query</div></td></tr>';
+                    document.getElementById('pagination').innerHTML = '';
+                    return;
+                }
+
+                tbody.innerHTML = meters.map(m => `
+                    <tr onclick="openMeter('${m.meterId || m.id}')">
+                        <td>${m.meterId || m.id || '—'}</td>
+                        <td>${m.serialNo || m.serialNumber || '—'}</td>
+                        <td><span class="badge badge-blue">${m.make || '—'}</span></td>
+                        <td><span class="badge badge-purple">${m.installStatus || m.installType || '—'}</span></td>
+                        <td><span class="badge badge-green">${m.dtCode || m.dt || '—'}</span></td>
+                    </tr>
+                `).join('');
+
+                const totalItems = meta.total || meters.length;
+                const pageSize = meta.pageSize || 20;
+                const uniqueTransformerCount = new Set(
+                    meters.map(m => m.dtCode || m.dt).filter(Boolean)
+                ).size;
+
+                document.getElementById('stat-total').textContent = totalItems;
+                document.getElementById('stat-pagesize').textContent = pageSize;
+                document.getElementById('stat-dts').textContent = uniqueTransformerCount || '—';
+
+                const totalPages = Math.max(1, Math.ceil(totalItems / pageSize));
+                const activePage = meta.page || page;
+                document.getElementById('pagination').innerHTML = `
+                    <button class="pagination-btn" onclick="changePage(${Math.max(1, activePage - 1)})" ${activePage <= 1 ? 'disabled' : ''}>Previous</button>
+                    <span class="page-info">Page ${activePage} of ${totalPages} — ${totalItems} total meters</span>
+                    <button class="pagination-btn" onclick="changePage(${Math.min(totalPages, activePage + 1)})" ${activePage >= totalPages ? 'disabled' : ''}>Next</button>
+                `;
+
+                document.getElementById('stat-status').style.color = 'var(--success)';
+                document.getElementById('stat-status-text').textContent = 'operational';
+                populateFilterOptions(meters);
+            } catch (err) {
+                tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state"><h3>Connection Error</h3>${err.message}</div></td></tr>`;
+                document.getElementById('stat-status').style.color = 'var(--danger)';
+                document.getElementById('stat-status-text').textContent = 'error';
+            }
+        }
+
+        function populateFilterOptions(meters) {
+            const makeSelect = document.getElementById('filter-make');
+            const dtSelect = document.getElementById('filter-dt');
+            const currentMake = makeSelect.value;
+            const currentDt = dtSelect.value;
+            const makes = [...new Set(meters.map(m => m.make).filter(Boolean))].sort();
+            const dts = [...new Set(meters.map(m => m.dtCode || m.dt).filter(Boolean))].sort();
+
+            makeSelect.innerHTML = '<option value="">All makes</option>' + makes.map((make) => `<option value="${make}">${make}</option>`).join('');
+            dtSelect.innerHTML = '<option value="">All DTs</option>' + dts.map((dt) => `<option value="${dt}">${dt}</option>`).join('');
+            if (currentMake) makeSelect.value = currentMake;
+            if (currentDt) dtSelect.value = currentDt;
+        }
+
+        function applyFilters() {
+            const q = document.getElementById('search-input').value.trim();
+            loadMeters(1, q);
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-make').value = '';
+            document.getElementById('filter-status').value = '';
+            document.getElementById('filter-dt').value = '';
+            document.getElementById('filter-phase').value = '';
+            document.getElementById('sort-by').value = '';
+            document.getElementById('sort-order').value = '';
+            document.getElementById('search-input').value = '';
+            currentQuery = '';
+            loadMeters(1, '');
+        }
+
+        async function refreshTransformerStat() {
+            try {
+                const res = await fetch(`${API}/network`);
+                const json = await res.json();
+                const nodes = json.data || [];
+                document.getElementById('stat-dts').textContent = nodes.length;
+            } catch (err) {
+                document.getElementById('stat-dts').textContent = '—';
+            }
+        }
+
+        function searchMeters() {
+            if (!requireAuth()) return;
+            const q = document.getElementById('search-input').value.trim();
+            loadMeters(1, q);
+        }
+
+        function exportMeters(format = 'json') {
+            if (!requireAuth()) return;
+            const filters = getActiveFilters();
+            const params = buildQueryParams(filters);
+            const url = `${API}/export?format=${format}&${params.toString()}`;
+            window.open(url, '_blank');
+        }
+
+        function changePage(page) {
+            if (!requireAuth()) return;
+            if (page < 1) return;
+            loadMeters(page, currentQuery);
+        }
+
+        function normalizeCoordinateValue(value) {
+            const parsed = Number(value);
+            return Number.isFinite(parsed) ? parsed : null;
+        }
+
+        function buildCoordinateLabel(detail) {
+            const coords = detail?.coordinates || detail?.geo || detail?.location || {};
+            const lat = normalizeCoordinateValue(coords.latitude ?? detail?.latitude ?? detail?.geo?.latitude);
+            const lng = normalizeCoordinateValue(coords.longitude ?? detail?.longitude ?? detail?.geo?.longitude);
+            if (lat !== null && lng !== null) return `${lat}, ${lng}`;
+            return 'Unavailable';
+        }
+
+        // --- Meter Detail Modal ---
+        async function openMeter(id) {
+            if (!requireAuth()) return;
+
+            if (activeChart) {
+                activeChart.destroy();
+                activeChart = null;
+            }
+
+            document.getElementById('modal-overlay').classList.add('active');
+            document.getElementById('modal-title').textContent = `Meter ${id}`;
+            document.getElementById('modal-body').innerHTML = '<div class="loading"><div class="spinner"></div>Loading details…</div>';
+            console.log('[Frontend] GET /api/meters/:id and /consumption', { id });
+
+            try {
+                const [detailRes, consumptionRes] = await Promise.all([
+                    fetch(`${API}/meters/${id}`),
+                    fetch(`${API}/meters/${id}/consumption`)
+                ]);
+
+                const detailJson = await detailRes.json();
+                const consumptionJson = await consumptionRes.json();
+                console.log('[Frontend] Response /api/meters/:id', { id, status: detailRes.status, success: detailJson.success });
+                console.log('[Frontend] Response /api/meters/:id/consumption', { id, status: consumptionRes.status, success: consumptionJson.success, count: (consumptionJson.data || []).length });
+
+                if (!detailJson.success) {
+                    throw new Error(detailJson.error || detailJson.message || 'Failed to fetch details');
+                }
+
+                // Unwrap envelope
+                const detail = detailJson.data;
+                const readings = consumptionJson.success ? consumptionJson.data : [];
+                const consumptionError = consumptionJson.success ? '' : (consumptionJson.error || consumptionJson.message || 'No consumption data');
+
+                const coordinateLabel = buildCoordinateLabel(detail);
+                const dtCode = detail.dtCode || detail.hierarchy?.dt || '—';
+
+                document.getElementById('modal-body').innerHTML = `
+                    <div class="detail-grid">
+                        <div class="detail-item"><div class="detail-label">Meter ID</div><div class="detail-value">${detail.meterId || id}</div></div>
+                        <div class="detail-item"><div class="detail-label">Serial</div><div class="detail-value">${detail.serialNo || detail.serialNumber || '—'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Make</div><div class="detail-value">${detail.make || '—'}</div></div>
+                        <div class="detail-item"><div class="detail-label">Install Type</div><div class="detail-value">${detail.installType || '—'}</div></div>
+                        <div class="detail-item"><div class="detail-label">DT Code</div><div class="detail-value">${dtCode}</div></div>
+                        <div class="detail-item"><div class="detail-label">Coordinates</div><div class="detail-value">${coordinateLabel}</div></div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-title">⚡ Energy Consumption (kWh)</div>
+                        <canvas id="consumption-chart" style="width:100%;height:200px;"></canvas>
+                    </div>
+                `;
+
+                if (readings.length > 0) {
+                    const labels = readings.map(r => {
+                        const d = new Date(r.timestamp || r.date);
+                        return d.toLocaleDateString('en-IN', { month: 'short', day: 'numeric' });
+                    }).reverse();
+                    const kwh = readings.map(r => r.kwh || r.kWh || 0).reverse();
+                    const voltage = readings.map(r => r.voltage || 0).reverse();
+
+                    activeChart = new Chart(document.getElementById('consumption-chart'), {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                {
+                                    label: 'kWh',
+                                    data: kwh,
+                                    borderColor: '#6366f1',
+                                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                    fill: true,
+                                    tension: 0.4,
+                                    borderWidth: 2,
+                                    pointRadius: 3,
+                                    pointBackgroundColor: '#6366f1',
+                                },
+                                {
+                                    label: 'Voltage',
+                                    data: voltage,
+                                    borderColor: '#22c55e',
+                                    backgroundColor: 'rgba(34, 197, 94, 0.05)',
+                                    fill: false,
+                                    tension: 0.4,
+                                    borderWidth: 2,
+                                    pointRadius: 2,
+                                    yAxisID: 'y1',
+                                },
+                            ],
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: { intersect: false, mode: 'index' },
+                            plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+                            scales: {
+                                x: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' } },
+                                y: { ticks: { color: '#64748b', font: { size: 10 } }, grid: { color: 'rgba(255,255,255,0.04)' }, title: { display: true, text: 'kWh', color: '#64748b' } },
+                                y1: { position: 'right', ticks: { color: '#64748b', font: { size: 10 } }, grid: { display: false }, title: { display: true, text: 'Voltage', color: '#64748b' } },
+                            },
+                        },
+                    });
+                } else {
+                    document.querySelector('.chart-container').innerHTML = `
+                        <div class="chart-title">⚡ Energy Consumption (kWh)</div>
+                        <div class="empty-state" style="margin-top:12px; padding:24px 16px;">
+                                <h3>${consumptionError === 'No consumption data' ? 'No consumption data' : consumptionError}</h3>
+                                <p>${consumptionError === 'No consumption data' ? 'The portal did not return any historical readings for this meter.' : 'The portal returned an error while loading consumption history.'}</p>
+                        </div>
+                    `;
+                }
+            } catch (err) {
+                document.getElementById('modal-body').innerHTML = `<div class="empty-state"><h3>Error</h3>${err.message}</div>`;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.remove('active');
+            document.getElementById('modal-body').innerHTML = '<div class="loading"><div class="spinner"></div>Loading…</div>';
+            if (activeChart) {
+                activeChart.destroy();
+                activeChart = null;
+            }
+        }
+
+        // --- Network ---
+        async function loadNetwork() {
+            const container = document.getElementById('network-tree');
+            container.innerHTML = '<div class="loading"><div class="spinner"></div>Loading network hierarchy…</div>';
+            console.log('[Frontend] GET /api/network');
+
+            try {
+                const res = await fetch(`${API}/network`);
+                const json = await res.json();
+                console.log('[Frontend] Response /api/network', { status: res.status, count: (json.data || []).length });
+                // Unwrap envelope
+                const nodes = json.data || [];
+
+                document.getElementById('stat-dts').textContent = nodes.length;
+
+                if (nodes.length === 0) {
+                    container.innerHTML = '<div class="empty-state"><h3>No network data</h3></div>';
+                    return;
+                }
+
+                container.innerHTML = nodes.map((dt, i) => {
+                    const meters = dt.meters || [];
+                    return `
+                        <div class="tree-node fade-in" style="animation-delay:${i * 0.05}s">
+                            <div class="tree-header" onclick="this.nextElementSibling.classList.toggle('collapsed')">
+                                <h3>🔌 ${dt.dtCode || dt.code || dt.name || 'DT-' + i}</h3>
+                                <span class="tree-count">${meters.length} meters</span>
+                            </div>
+                            <div class="tree-children">
+                                ${meters.length > 0 ? meters.map(m => `
+                                    <div class="tree-child" onclick="openMeter('${m.meterId || m.id || m}')">
+                                        <div class="tree-dot"></div>
+                                        ${m.meterId || m.id || m}
+                                    </div>
+                                `).join('') : '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:12px;">No meters assigned</div>'}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (err) {
+                container.innerHTML = `<div class="empty-state"><h3>Error</h3>${err.message}</div>`;
+            }
+        }
+
+        // --- Init ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            hydrateAuthState();
+            if (authState.loggedIn) {
+                refreshTransformerStat();
+                loadMeters(1);
+            } else {
+                openAuthModal();
+            }
+        });
+    </script>
+</body>
+
+</html>
