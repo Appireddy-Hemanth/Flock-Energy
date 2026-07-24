@@ -9,9 +9,11 @@ import path from 'path';
 import apiRouter from './routes/api';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { logger } from './utils/logger';
+import { env, validateEnvironment } from './config/environment';
 
-// Ensure .env is parsed
+// Ensure .env is parsed and validated
 dotenv.config();
+validateEnvironment();
 
 const app = express();
 
@@ -20,8 +22,8 @@ app.use(helmet({
     contentSecurityPolicy: false, // Disable CSP so Swagger UI loads its own assets
 }));
 app.use(cors({
-    origin: process.env.CORS_ORIGIN || '*',
-    methods: ['GET'],
+    origin: env.corsOrigin,
+    methods: ['GET', 'POST'],
     allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 

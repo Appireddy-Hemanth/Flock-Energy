@@ -19,6 +19,10 @@ export class PortalClient {
     private client: AxiosInstance;
     private sessionCookie: string | null = null;
     private authenticated: boolean = false;
+    private loginAttempts: number = 0;
+    private maxLoginAttempts: number = 3;
+    private lastLoginTime: number = 0;
+    private loginCooldownMs: number = 5000;
 
     constructor() {
         this.client = axios.create({
@@ -27,6 +31,7 @@ export class PortalClient {
             validateStatus: () => true,
             httpsAgent: new https.Agent({ rejectUnauthorized: false }),
         });
+        logger.info('PortalClient initialized', { baseURL: env.portalBaseUrl, portalEmailConfigured: !!env.portalEmail });
     }
 
     /** Whether the client currently holds a valid session. */
@@ -38,44 +43,84 @@ export class PortalClient {
      * Performs SvelteKit form-action login to retrieve a session cookie.
      */
     public async login(): Promise<void> {
-        logger.info('Portal request', { method: 'POST', url: '/login' });
+        // Validate environment variables
+        if (!env.portalEmail || !env.portalPassword) {
+            logger.error('Login attempted but portal credentials are missing', {
+                portalEmailConfigured: !!env.portalEmail,
+                portalPasswordConfigured: !!env.portalPassword,
+            });
+            throw ApiError.unauthorized('Portal credentials not configured', 'Missing PORTAL_EMAIL or PORTAL_PASSWORD environment variables');
+        }
+
+        // Throttle login attempts
+        const now = Date.now();
+        if (this.lastLoginTime > 0 && now - this.lastLoginTime < this.loginCooldownMs) {
+            logger.warn('Login attempt throttled due to recent failure', { cooldownRemainingMs: this.loginCooldownMs - (now - this.lastLoginTime) });
+            throw ApiError.unauthorized('Login throttled', 'Too many login attempts. Please wait before retrying.');
+        }
+
+        logger.info('Portal login started', { method: 'POST', url: '/login', attempt: this.loginAttempts + 1 });
         const payload = `email=${encodeURIComponent(env.portalEmail)}&password=${encodeURIComponent(env.portalPassword)}`;
 
-        const response = await this.client.post('/login', payload, {
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json',
-                'x-sveltekit-action': 'true',
-                'Origin': env.portalBaseUrl,
-                'Referer': `${env.portalBaseUrl}/login`,
-                'User-Agent': 'Mozilla/5.0',
-            },
-        });
-
-        if (response.status !== 200) {
-            throw ApiError.unauthorized('Authentication failed', {
-                status: response.status,
-                body: response.data,
+        try {
+            const response = await this.client.post('/login', payload, {
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'Accept': 'application/json',
+                    'x-sveltekit-action': 'true',
+                    'Origin': env.portalBaseUrl,
+                    'Referer': `${env.portalBaseUrl}/login`,
+                    'User-Agent': 'Mozilla/5.0',
+                },
             });
-        }
 
-        const setCookies = response.headers['set-cookie'];
-        if (!setCookies || setCookies.length === 0) {
-            throw ApiError.unauthorized('Authentication failed', 'Portal authenticated but returned no session cookies.');
-        }
+            logger.info('Portal login response received', { status: response.status, hasSetCookie: !!response.headers['set-cookie'] });
 
-        this.sessionCookie = setCookies.map((c) => c.split(';')[0]).join('; ');
-        this.client.defaults.headers.common['Cookie'] = this.sessionCookie;
-        this.authenticated = true;
+            if (response.status !== 200) {
+                this.lastLoginTime = now;
+                this.loginAttempts++;
+                logger.error('Portal login failed', {
+                    status: response.status,
+                    attempt: this.loginAttempts,
+                });
+                throw ApiError.unauthorized('Authentication failed', {
+                    status: response.status,
+                    body: response.data,
+                });
+            }
+
+            const setCookies = response.headers['set-cookie'];
+            if (!setCookies || setCookies.length === 0) {
+                this.lastLoginTime = now;
+                this.loginAttempts++;
+                logger.error('Portal login succeeded but returned no session cookies', { attempt: this.loginAttempts });
+                throw ApiError.unauthorized('Authentication failed', 'Portal authenticated but returned no session cookies.');
+            }
+
+            this.sessionCookie = setCookies.map((c) => c.split(';')[0]).join('; ');
+            this.client.defaults.headers.common['Cookie'] = this.sessionCookie;
+            this.authenticated = true;
+            this.loginAttempts = 0;  // Reset on success
+            this.lastLoginTime = 0;  // Reset throttle
+            logger.info('Portal login successful', { sessionCookieLength: this.sessionCookie.length });
+        } catch (error) {
+            this.lastLoginTime = now;
+            this.loginAttempts++;
+            logger.error('Portal login exception', {
+                error: (error as Error).message,
+                attempt: this.loginAttempts,
+            });
+            throw error;
+        }
     }
 
     /**
      * Wraps requests with automatic authentication and session renewal.
      */
     private async executeRequest<T>(reqFn: () => Promise<any>, attempt = 1): Promise<T> {
-        logger.debug('Portal request started');
+        logger.debug('Portal request started', { authenticated: this.authenticated, hasCookie: !!this.sessionCookie });
         if (!this.authenticated || !this.sessionCookie) {
-            logger.debug('No active portal session; logging in');
+            logger.info('No active portal session; attempting login', { authenticated: this.authenticated, hasCookie: !!this.sessionCookie });
             await this.login();
         }
 
@@ -83,11 +128,11 @@ export class PortalClient {
         let response;
         try {
             response = await reqFn();
-            logger.info('Portal response', { status: response.status });
+            logger.info('Portal response received', { status: response.status });
         } catch (e: any) {
-            logger.error('Portal request failed', { message: e.message });
+            logger.error('Portal request failed', { message: e.message, attempt });
             if (attempt < 3) {
-                logger.warn('Retrying portal request', { attempt });
+                logger.warn('Retrying portal request', { attempt: attempt + 1 });
                 return this.executeRequest(reqFn, attempt + 1);
             }
             throw ApiError.portalUnavailable('Portal unavailable');
@@ -99,12 +144,12 @@ export class PortalClient {
             response.status === 403 ||
             (response.status === 302 && response.headers['location'] === '/login')
         ) {
-            logger.warn('Portal session expired or rejected', { status: response.status });
+            logger.warn('Portal session expired or rejected; reauthenticating', { status: response.status });
             this.authenticated = false;
             this.sessionCookie = null;
             await this.login();
             response = await reqFn();
-            logger.info('Portal retry response', { status: response.status });
+            logger.info('Portal retry response received', { status: response.status });
         }
 
         if (response.status === 401 || response.status === 403) {

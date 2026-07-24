@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: flock-energy-urja-api
+    env: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: HOST
+        value: 0.0.0.0
+      - key: PORT
+        value: 10000
+      - key: PORTAL_EMAIL
+        sync: false
+      - key: PORTAL_PASSWORD
+        sync: false
+      - key: PORTAL_BASE_URL
+        value: https://urja-ops.flockenergy.tech

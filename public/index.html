@@ -1717,12 +1717,47 @@
                 alert('Please enter both email and password.');
                 return;
             }
-            authState = { loggedIn: true, name: email.split('@')[0], email };
-            localStorage.setItem('urja-auth', JSON.stringify(authState));
-            updateAuthUI();
-            closeAuthModal();
-            refreshTransformerStat();
-            loadMeters(1);
+            
+            // Show loading state
+            const submitBtn = document.querySelector('.auth-actions button.primary');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Logging in...';
+            }
+            
+            console.log('[Frontend] Calling POST /api/login');
+            
+            fetch(`${API}/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password }),
+            })
+            .then(res => res.json())
+            .then(json => {
+                console.log('[Frontend] POST /api/login response', { status: res.status, success: json.success });
+                if (json.success && json.data?.authenticated) {
+                    authState = { loggedIn: true, name: email.split('@')[0], email };
+                    localStorage.setItem('urja-auth', JSON.stringify(authState));
+                    updateAuthUI();
+                    closeAuthModal();
+                    refreshTransformerStat();
+                    loadMeters(1);
+                } else {
+                    alert('Login failed: ' + (json.error || json.message || 'Unknown error'));
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = 'Login';
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('[Frontend] Login error', err);
+                alert('Login error: ' + err.message);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            });
         }
 
         function toggleTheme() {
@@ -2077,9 +2112,32 @@
         }
 
         // --- Init ---
-        document.addEventListener('DOMContentLoaded', () => {
+        async function initializeBackendSession() {
+            console.log('[Frontend] Checking backend authentication status');
+            try {
+                const res = await fetch(`${API}/session`);
+                const json = await res.json();
+                console.log('[Frontend] GET /api/session response', { authenticated: json.data?.authenticated });
+                
+                if (!json.data?.authenticated) {
+                    console.log('[Frontend] Backend not authenticated; attempting auto-login');
+                    try {
+                        const loginRes = await fetch(`${API}/login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) });
+                        const loginJson = await loginRes.json();
+                        console.log('[Frontend] Auto-login attempt', { success: loginJson.success, authenticated: loginJson.data?.authenticated });
+                    } catch (err) {
+                        console.warn('[Frontend] Auto-login failed', err);
+                    }
+                }
+            } catch (err) {
+                console.warn('[Frontend] Unable to check backend session', err);
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', async () => {
             loadTheme();
             hydrateAuthState();
+            await initializeBackendSession();
             if (authState.loggedIn) {
                 refreshTransformerStat();
                 loadMeters(1);

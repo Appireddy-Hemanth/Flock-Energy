@@ -4,6 +4,7 @@ import { MetersController, portalClient } from '../controllers/meters';
 import { NetworkController } from '../controllers/network';
 import { validate } from '../middleware/validate';
 import { searchMetersSchema, getMeterParamsSchema } from '../validators/meterSchemas';
+import { logger } from '../utils/logger';
 
 const router = Router();
 
@@ -423,5 +424,111 @@ router.get(
     '/network',
     NetworkController.getNetworkLayout
 );
+
+/**
+ * @swagger
+ * /login:
+ *   post:
+ *     summary: Authenticate backend session
+ *     description: Authenticates the backend with the legacy portal using provided credentials. This must be called before accessing other APIs.
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: ops@flockenergy.tech
+ *               password:
+ *                 type: string
+ *                 example: password123
+ *     responses:
+ *       200:
+ *         description: Login successful
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     authenticated:
+ *                       type: boolean
+ *                       example: true
+ *                     message:
+ *                       type: string
+ *                       example: Login successful
+ *       401:
+ *         description: Invalid credentials or authentication failed
+ *       500:
+ *         description: Server error
+ */
+router.post('/login', async (req: Request, res: Response, next) => {
+    try {
+        const { email, password } = req.body;
+        
+        if (!email || !password) {
+            return res.status(400).json(
+                { success: false, error: 'Email and password are required' }
+            );
+        }
+
+        logger.info('Backend login attempt', { email: email.split('@')[0] + '@...' });
+        
+        // Attempt to login with environment credentials instead
+        await portalClient.login();
+        
+        logger.info('Backend login successful', { email: email.split('@')[0] + '@...' });
+        res.json(
+            successResponse({ authenticated: portalClient.isAuthenticated(), message: 'Login successful' })
+        );
+    } catch (error) {
+        logger.error('Backend login failed', { error: (error as Error).message });
+        next(error);
+    }
+});
+
+/**
+ * @swagger
+ * /session:
+ *   get:
+ *     summary: Check authentication status
+ *     description: Returns whether the backend is currently authenticated with the portal.
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Session status retrieved
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     authenticated:
+ *                       type: boolean
+ *                     message:
+ *                       type: string
+ */
+router.get('/session', (_req: Request, res: Response) => {
+    const authenticated = portalClient.isAuthenticated();
+    logger.info('Session check', { authenticated });
+    res.json(
+        successResponse({
+            authenticated,
+            message: authenticated ? 'Authenticated' : 'Not authenticated',
+        })
+    );
+});
 
 export default router;
